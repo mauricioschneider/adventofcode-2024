@@ -28,6 +28,26 @@ const readLine = createInterface({
   crlfDelay: Infinity,
 });
 
+/**
+ * Instead of parsing the columns and later doing lengthy iteration on close,
+ * the iteraion is only done on the numbers that repeat.
+ *
+ * First, it keeps two dictionaries, one per column. Each entry contains a number
+ * from the respective column as key, and the times it repeats in said colum as value.
+ *
+ * When a new line is read, it first updates each dictionary with the corresponding numbers,
+ * and updates the repeat counter for them.
+ *
+ * Then, it checks if the number from the left column is in the dictionary for the right colum.
+ * If it is, it adds or updates the entry for that number in the numbersInCommon dictionary
+ * with the latest repeat counters for that number in each column dictionary.
+ *
+ * Subsequently, it does the same for the number from the right column. If the number on the right
+ * exists on the left, we want to make sure the entry for that number in numbersInCommon
+ * contains the latest repeat counters, since we don't know in advance the total number of repeats.
+ *
+ * On close, it calculates the similarity score multiplying the number by the times of repeats per column.
+ */
 readLine.on("line", (line: string) => {
   const lineItems = line.split(",");
 
