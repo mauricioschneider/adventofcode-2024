@@ -18,39 +18,39 @@ type RepeatDict = Record<
 const leftArr: ColumnDict = {};
 const rightArr: ColumnDict = {};
 const numbersInCommon: RepeatDict = {};
+let total: number = 0;
 
 const inputFile = "./01-historian-hysteria-input.csv";
 //const inputFile = "./test.csv";
 
+// Why not readFileSync you ask?
+// Because that wouldn't be as cool, would it?
 const stream = createReadStream(resolve(__dirname, inputFile));
 const readLine = createInterface({
   input: stream,
   crlfDelay: Infinity,
 });
 
+const getNumTotal = (num: number, list: RepeatDict): number => {
+  const entry = list[num];
+  if (!entry) return 0;
+  return num * (entry.repeatLeft ?? 1) * (entry.repeatRight ?? 1);
+};
+
 /**
- * Instead of parsing the columns and later doing lengthy iteration on close,
- * the iteraion is only done on the numbers that repeat.
+ * On each line, check if left and right column numbers are present in the opposite
+ * list of numbers read from the stream so far.
  *
- * First, it keeps two dictionaries, one per column. Each entry contains a number
- * from the respective column as key, and the times it repeats in said colum as value.
+ * If they are present:
+ * 1. calculate pre-update entry total, deduct it from total
+ * 2. add or update the entry in the numbersInCommon dictionary.
+ * 3. calculate post-update entry total, add it to total
  *
- * When a new line is read, it first updates each dictionary with the corresponding numbers,
- * and updates the repeat counter for them.
+ * In this way, we avoid iterating twice, one per event.
+ * Keeping the total on the fly also helps avoiding nested iteration on close to find,
+ * either explicitly with a for loop, or using Array.filter
  *
- * Then, it checks if the number from the left column is in the dictionary for the right colum.
- * If it is, it adds or updates the entry for that number in the numbersInCommon dictionary
- * with the latest repeat counters for that number in each column dictionary.
- *
- * Subsequently, it does the same for the number from the right column. If the number on the right
- * exists on the left, we want to make sure the entry for that number in numbersInCommon
- * contains the latest repeat counters, since we don't know in advance the total number of repeats.
- *
- * On close, it calculates the similarity score multiplying the number by the times of repeats per column.
- *
- * To further optimize, the script could also track the total similarity score on each line read instead of on close.
- * When it finds a common number, it substracts the similarity score of the previous repeat counters, and adds
- * the new score based on the updated number of repeats.
+ * Time complexity is O(n)
  */
 readLine.on("line", (line: string) => {
   const lineItems = line.split(",");
@@ -61,30 +61,24 @@ readLine.on("line", (line: string) => {
   rightArr[rightNumber] = (rightArr[rightNumber] ?? 0) + 1;
   leftArr[leftNumber] = (leftArr[leftNumber] ?? 0) + 1;
 
-  if (rightArr[leftNumber]) {
-    numbersInCommon[leftNumber] = {
-      repeatLeft: leftArr[leftNumber],
-      repeatRight: rightArr[leftNumber],
+  const updateNumbersInCommon = (num: number) => {
+    total = total - getNumTotal(num, numbersInCommon);
+    numbersInCommon[num] = {
+      repeatLeft: leftArr[num],
+      repeatRight: rightArr[num],
     };
+    total = total + getNumTotal(num, numbersInCommon);
+  };
+
+  if (rightArr[leftNumber]) {
+    updateNumbersInCommon(leftNumber);
   }
 
   if (leftArr[rightNumber]) {
-    numbersInCommon[rightNumber] = {
-      repeatLeft: leftArr[rightNumber],
-      repeatRight: rightArr[rightNumber],
-    };
+    updateNumbersInCommon(rightNumber);
   }
 });
 
 readLine.on("close", () => {
-  let total: number = 0;
-
-  for (const el in numbersInCommon) {
-    total +=
-      Number(el) *
-      (numbersInCommon[el].repeatLeft ?? 1) *
-      (numbersInCommon[el].repeatRight ?? 1);
-  }
-
   console.log(total);
 });
