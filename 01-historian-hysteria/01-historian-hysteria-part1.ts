@@ -1,10 +1,17 @@
 import { createReadStream } from "fs";
+import { dirname, resolve } from "path";
 import { createInterface } from "readline";
+import { fileURLToPath } from "url";
+
+const __filename: string = fileURLToPath(import.meta.url);
+const __dirname: string = dirname(__filename);
 
 const leftArr: number[] = [];
 const rightArr: number[] = [];
 
-const stream = createReadStream("./01-historian-hysteria-input.csv");
+const stream = createReadStream(
+  resolve(__dirname, "./01-historian-hysteria-input.csv")
+);
 const readLine = createInterface({
   input: stream,
   crlfDelay: Infinity,
