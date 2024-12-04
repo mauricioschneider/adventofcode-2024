@@ -47,6 +47,10 @@ const readLine = createInterface({
  * contains the latest repeat counters, since we don't know in advance the total number of repeats.
  *
  * On close, it calculates the similarity score multiplying the number by the times of repeats per column.
+ *
+ * To further optimize, the script could also track the total similarity score on each line read instead of on close.
+ * When it finds a common number, it substracts the similarity score of the previous repeat counters, and adds
+ * the new score based on the updated number of repeats.
  */
 readLine.on("line", (line: string) => {
   const lineItems = line.split(",");
