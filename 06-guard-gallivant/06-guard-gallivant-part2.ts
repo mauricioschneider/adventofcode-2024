@@ -94,6 +94,5 @@ const getTotalPossibleLoops = (matrix: string[][], start: Pos): number => {
   return loops;
 };
 
-// 1753
 const start = getStart();
 console.log(getTotalPossibleLoops(matrix, start));
